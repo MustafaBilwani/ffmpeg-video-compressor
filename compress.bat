@@ -57,9 +57,9 @@ FOR %%f IN ("%BASE_DIR%\*.mp4") DO (
         ECHO  - Compressing...
         ffmpeg -i "%BASE_DIR%\reserve\%%~nxf" -b:v !VIDEO_BITRATE!k -b:a !AUDIO_BITRATE!k -y "%BASE_DIR%\%%~nxf"
         
-        REM --- Error Handling ---
-        IF ERRORLEVEL 1 (
-            ECHO  - FFMPEG compression FAILED for "%%~nxf"!
+        REM --- New Error Handling ---
+        IF !ERRORLEVEL! NEQ 0 (
+            ECHO  - FFMPEG compression FAILED for "%%~nxf"! (Error Code: !ERRORLEVEL!^)
             ECHO  - Moving original file back to base directory.
             move "%BASE_DIR%\reserve\%%~nxf" "%BASE_DIR%\"
         ) ELSE (
