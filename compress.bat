@@ -2,9 +2,29 @@
 SETLOCAL ENABLEDELAYEDEXPANSION
 
 REM --- Configuration ---
-REM Set the target file size in Megabytes (MB).
+REM Set a default target size first.
 SET TARGET_SIZE_MB=10
 
+REM Check if a parameter was provided. If so, validate it and overwrite the default.
+IF NOT "%~1"=="" (
+    SET "TARGET_SIZE_MB=%~1"
+    
+    REM --- VALIDATION BLOCK using DELAYED EXPANSION ---
+
+    REM 1. Validate that the input is a valid integer.
+    SET /A CHECK_VAR=!TARGET_SIZE_MB!
+    
+    IF "!CHECK_VAR!" NEQ "!TARGET_SIZE_MB!" (
+        echo Error: Invalid characters in parameter. Please provide a valid number.
+        goto :eof
+    )
+
+    REM 2. Validate that the number is positive (greater than 0).
+    IF !TARGET_SIZE_MB! LEQ 0 (
+        echo Error: Target size must be a positive number.
+        goto :eof
+    )
+)
 REM --- Script ---
 REM Get the parent directory (base directory)
 SET "BASE_DIR=%~dp0.."
