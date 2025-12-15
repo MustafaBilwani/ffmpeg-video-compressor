@@ -5,10 +5,6 @@ REM --- Configuration ---
 REM Set a default target size first.
 SET TARGET_SIZE_MB=10
 
-REM Track start time and video count
-SET START_TIME=%TIME%
-SET VIDEO_COUNT=0
-
 REM Check if a parameter was provided. If so, validate it and overwrite the default.
 IF NOT "%~1"=="" (
     SET "TARGET_SIZE_MB=%~1"
@@ -31,7 +27,7 @@ IF NOT "%~1"=="" (
 )
 REM --- Script ---
 REM Get the parent directory (base directory)
-SET "BASE_DIR=%~dp0.."
+SET "BASE_DIR=%cd%"
 ECHO Base directory: %BASE_DIR%
 
 REM Create the reserve folder if it doesn't exist
@@ -52,7 +48,6 @@ FOR %%f IN ("%BASE_DIR%\*.mp4") DO (
     ECHO Found file: "%%~nxf"
     
     REM Check if file size is greater than the target size
-    IF %%~zf GTR %TARGET_SIZE_BYTES% (
         ECHO File size (%%~zf Bytes^) is larger than target. Processing...
 
         REM --- Get video duration using ffprobe ---
@@ -64,14 +59,14 @@ FOR %%f IN ("%BASE_DIR%\*.mp4") DO (
 
         REM --- Calculate required bitrates using PowerShell ---
         ECHO  - Calculating bitrates...
-        FOR /F "usebackq" %%b IN (`powershell -Command "[math]::Round(((%TARGET_SIZE_MB% * 1024 * 8) / !DURATION!) * 0.8)"`) DO (
+        FOR /F "usebackq" %%b IN (`powershell -Command "[math]::Round(((%TARGET_SIZE_MB% * 1024 * 8) / !DURATION!) * 0.95)"`) DO (
             SET VIDEO_BITRATE=%%b
         )
-        FOR /F "usebackq" %%a IN (`powershell -Command "[math]::Round(((%TARGET_SIZE_MB% * 1024 * 8) / !DURATION!) * 0.15)"`) DO (
-            SET AUDIO_BITRATE=%%a
-        )
+        @REM FOR /F "usebackq" %%a IN (`powershell -Command "[math]::Round((%TARGET_SIZE_MB% * 1024 * 8) / !DURATION!)"`) DO (
+        @REM     SET AUDIO_BITRATE=%%a
+        @REM )
         ECHO  - Target Video Bitrate: !VIDEO_BITRATE! kbps
-        ECHO  - Target Audio Bitrate: !AUDIO_BITRATE! kbps
+        @REM ECHO  - Target Audio Bitrate: !AUDIO_BITRATE! kbps
 
         REM --- Move original file to reserve folder ---
         ECHO  - Moving original to "%BASE_DIR%\reserve\"
@@ -79,7 +74,7 @@ FOR %%f IN ("%BASE_DIR%\*.mp4") DO (
 
         REM --- Compress video with ffmpeg ---
         ECHO  - Compressing...
-        ffmpeg -i "%BASE_DIR%\reserve\%%~nxf" -b:v !VIDEO_BITRATE!k -b:a !AUDIO_BITRATE!k -y "%BASE_DIR%\%%~nxf"
+        ffmpeg -i "%BASE_DIR%\reserve\%%~nxf" -an -c:v copy "%BASE_DIR%\%%~nxf"
         
         REM --- New Error Handling ---
         IF !ERRORLEVEL! NEQ 0 (
@@ -88,19 +83,10 @@ FOR %%f IN ("%BASE_DIR%\*.mp4") DO (
             move "%BASE_DIR%\reserve\%%~nxf" "%BASE_DIR%\"
         ) ELSE (
             ECHO  - Compression finished successfully for "%%~nxf".
-            SET /A VIDEO_COUNT=!VIDEO_COUNT!+1
         )
 
-    ) ELSE (
-        ECHO File size (%%~zf Bytes^) is within target size. Skipping.
-    )
 )
 
 ECHO.
-ECHO =============================================
 ECHO Script finished.
-ECHO Videos processed: %VIDEO_COUNT%
-ECHO Start time: %START_TIME%
-ECHO Time taken: %TIME%
-ECHO =============================================
 PAUSE
