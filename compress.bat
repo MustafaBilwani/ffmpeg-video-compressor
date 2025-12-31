@@ -34,10 +34,12 @@ REM Get the parent directory (base directory)
 SET "BASE_DIR=%~dp0.."
 ECHO Base directory: %BASE_DIR%
 
+SET "RES_DIR=%BASE_DIR%\reserve"
+
 REM Create the reserve folder if it doesn't exist
-IF NOT EXIST "%BASE_DIR%\reserve" (
+IF NOT EXIST "%RES_DIR%" (
     ECHO Creating reserve directory...
-    mkdir "%BASE_DIR%\reserve"
+    mkdir "%RES_DIR%"
 )
 
 REM Convert target size from MB to Bytes for file size comparison
@@ -74,18 +76,18 @@ FOR %%f IN ("%BASE_DIR%\*.mp4") DO (
         ECHO  - Target Audio Bitrate: !AUDIO_BITRATE! kbps
 
         REM --- Move original file to reserve folder ---
-        ECHO  - Moving original to "%BASE_DIR%\reserve\"
-        move "%%f" "%BASE_DIR%\reserve\"
+        ECHO  - Moving original to "%RES_DIR%\"
+        move "%%f" "%RES_DIR%\"
 
         REM --- Compress video with ffmpeg ---
         ECHO  - Compressing...
-        ffmpeg -i "%BASE_DIR%\reserve\%%~nxf" -b:v !VIDEO_BITRATE!k -b:a !AUDIO_BITRATE!k -y "%BASE_DIR%\%%~nxf"
+        ffmpeg -i "%RES_DIR%\%%~nxf" -b:v !VIDEO_BITRATE!k -b:a !AUDIO_BITRATE!k -y "%BASE_DIR%\%%~nxf"
         
         REM --- New Error Handling ---
         IF !ERRORLEVEL! NEQ 0 (
             ECHO  - FFMPEG compression FAILED for "%%~nxf"! (Error Code: !ERRORLEVEL!^)
             ECHO  - Moving original file back to base directory.
-            move "%BASE_DIR%\reserve\%%~nxf" "%BASE_DIR%\"
+            move "%RES_DIR%\%%~nxf" "%BASE_DIR%\"
         ) ELSE (
             ECHO  - Compression finished successfully for "%%~nxf".
             SET /A VIDEO_COUNT=!VIDEO_COUNT!+1
